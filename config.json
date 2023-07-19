@@ -1,0 +1,6 @@
+{
+	"server": {
+		"port": "8080",
+		"metricsport": 7070
+	}
+}
