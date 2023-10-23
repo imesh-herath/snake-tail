@@ -18,8 +18,20 @@ var (
 type AppConfig struct {
 	Server struct {
 		Port        string `json:"port"`
-		MetricsPort int `json:"metricsport"`
+		MetricsPort int    `json:"metricsport"`
 	} `json:"server"`
+
+	Firebase struct {
+		Url               string `json:"url"`
+		ApiKey            string `json:"apikey"`
+		AuthDomain        string `json:"authdomain"`
+		DatabaseURL       string `json:"databaseurl"`
+		ProjectId         string `json:"projectid"`
+		StorageBucket     string `json:"storagebucket"`
+		MessagingSenderId string `json:"messagingsenderid"`
+		AppId             string `json:"appid"`
+		MeasurementId     string `json:"measurementid"`
+	} `json:"firebase"`
 }
 
 func init() {

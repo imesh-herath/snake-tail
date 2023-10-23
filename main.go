@@ -2,11 +2,15 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"snake-tail/config"
 	"snake-tail/http/server"
 	"syscall"
+
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var (
@@ -14,10 +18,19 @@ var (
 )
 
 func main() {
+
+	// Initialize MongoDB client
+	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+	client, err := mongo.Connect(nil, clientOptions)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer client.Disconnect(nil)
+
 	httpServer = server.NewServer(config.App)
 
 	// Start http server
-	err := httpServer.Start()
+	err = httpServer.Start()
 	if err != nil {
 		panic(err)
 	}
