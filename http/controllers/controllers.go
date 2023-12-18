@@ -52,8 +52,8 @@ var collection *mongo.Collection
 
 func GetSnakes(w http.ResponseWriter, r *http.Request) {
 	// Set up your Firestore API URL and API key
-	firestoreURL := config.App.Firebase.Url
-	apiKey := config.App.Firebase.ApiKey
+	firestoreURL := config.App.FirebaseSnake.Url
+	apiKey := config.App.FirebaseSnake.ApiKey
 
 	// Create an HTTP client
 	client := &http.Client{}
@@ -95,53 +95,182 @@ func GetSnakes(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetSnakeByID(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	id, err := primitive.ObjectIDFromHex(params["id"])
+	// Get the snake ID from the request URL
+	snakeID := mux.Vars(r)["id"]
+
+	// Set up your Firestore API URL and API key
+	firestoreURL := fmt.Sprintf("%s/%s", config.App.FirebaseSnake.Url, snakeID)
+	apiKey := config.App.FirebaseSnake.ApiKey
+
+	// Create an HTTP client
+	client := &http.Client{}
+
+	// Create a GET request
+	req, err := http.NewRequest("GET", firestoreURL, nil)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Invalid snake ID"))
+		fmt.Println("Error creating request:", err)
 		return
 	}
 
-	var snake Snake
-	err = collection.FindOne(nil, bson.M{"_id": id}).Decode(&snake)
+	// Add the API key as a query parameter
+	q := req.URL.Query()
+	q.Add("key", apiKey)
+	req.URL.RawQuery = q.Encode()
+
+	// Send the request
+	resp, err := client.Do(req)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Unable to fetch data from database"))
+		fmt.Println("Error sending request:", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Read the response body
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading response:", err)
 		return
 	}
 
-	json.NewEncoder(w).Encode(snake)
+	// Check if the document exists
+	if resp.StatusCode == http.StatusNotFound {
+		http.NotFound(w, r)
+		return
+	}
+
+	apiResponse := &entities.SnakeResponse{}
+	_ = json.Unmarshal(body, apiResponse)
+
+	// Process the response (body) as needed
+	fmt.Println("Response:", apiResponse)
+	w.Header().Add("Content-Type", "application/json")
+	w.Write(body)
 }
 
-func CreateSnake(w http.ResponseWriter, r *http.Request) {
-	var snake Snake
-	err := json.NewDecoder(r.Body).Decode(&snake)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Invalid request payload"))
-		return
-	}
 
-	snake.ID = primitive.NewObjectID()
+// func GetSnakeByID(w http.ResponseWriter, r *http.Request) {
+// 	params := mux.Vars(r)
+// 	id, err := primitive.ObjectIDFromHex(params["id"])
+// 	if err != nil {
+// 		w.WriteHeader(http.StatusBadRequest)
+// 		w.Write([]byte(fmt.Sprintf("Invalid ID: %v", id)))
+// 		return
+// 	}
 
-	_, err = collection.InsertOne(nil, snake)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Unable to create snake"))
-		return
-	}
+// 	var snake Snake
+// 	err = collection.FindOne(nil, bson.M{"_id": id}).Decode(&snake)
+// 	if err != nil {
+// 		w.WriteHeader(http.StatusInternalServerError)
+// 		w.Write([]byte("Unable to fetch data from database"))
+// 		return
+// 	}
 
-	response := struct {
-		Message string             `json:"message"`
-		Data    primitive.ObjectID `json:"data"`
-	}{
-		Message: "New Snake Created!",
-		Data:    snake.ID,
-	}
+// 	json.NewEncoder(w).Encode(snake)
+// }
 
-	json.NewEncoder(w).Encode(response)
-}
+// func CreatePatient(w http.ResponseWriter, r *http.Request) {
+// 	// Set up your Firestore API URL and API key
+// 	firestoreURL := config.App.FirebasePatient.Url
+// 	apiKey := config.App.FirebasePatient.ApiKey
+
+// 	// Create a SnakeRequest struct representing the data you want to create
+// 	snakeRequest := &entities.SnakeResponse{
+// 		Name: "Sample Snake",
+// 		Fields: struct {
+// 			PatientName   SnakeFieldStringValue `json:"patient_name"`
+// 			BittenTime    SnakeFieldTimestampValue `json:"bitten_time"`
+// 			SnakeImageUrl SnakeFieldStringValue `json:"snake_image_url"`
+// 			ID            SnakeFieldIntegerValue `json:"id"`
+// 			PhoneNumber   SnakeFieldIntegerValue `json:"phone_number"`
+// 		}{
+// 			PatientName:   SnakeFieldStringValue{"John Doe"},
+// 			BittenTime:    SnakeFieldTimestampValue{time.Now()},
+// 			SnakeImageUrl: SnakeFieldStringValue{"https://example.com/snake.jpg"},
+// 			ID:            SnakeFieldIntegerValue{"123"},
+// 			PhoneNumber:   SnakeFieldIntegerValue{"9876543210"},
+// 		},
+// 	}
+
+// 	// Convert SnakeRequest to JSON
+// 	requestBody, err := json.Marshal(snakeRequest)
+// 	if err != nil {
+// 		fmt.Println("Error marshaling request body:", err)
+// 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	// Create an HTTP client
+// 	client := &http.Client{}
+
+// 	// Create a POST request
+// 	req, err := http.NewRequest("POST", firestoreURL, bytes.NewBuffer(requestBody))
+// 	if err != nil {
+// 		fmt.Println("Error creating request:", err)
+// 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	// Add the API key as a query parameter
+// 	q := req.URL.Query()
+// 	q.Add("key", apiKey)
+// 	req.URL.RawQuery = q.Encode()
+
+// 	// Set content type to JSON
+// 	req.Header.Set("Content-Type", "application/json")
+
+// 	// Send the request
+// 	resp, err := client.Do(req)
+// 	if err != nil {
+// 		fmt.Println("Error sending request:", err)
+// 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+// 		return
+// 	}
+// 	defer resp.Body.Close()
+
+// 	// Read the response body
+// 	body, err := ioutil.ReadAll(resp.Body)
+// 	if err != nil {
+// 		fmt.Println("Error reading response:", err)
+// 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	// Process the response (body) as needed
+// 	fmt.Println("Response:", string(body))
+
+// 	// Return the response to the client
+// 	w.Header().Add("Content-Type", "application/json")
+// 	w.Write(body)
+// }
+
+// func CreateSnake(w http.ResponseWriter, r *http.Request) {
+// 	var snake Snake
+// 	err := json.NewDecoder(r.Body).Decode(&snake)
+// 	if err != nil {
+// 		w.WriteHeader(http.StatusBadRequest)
+// 		w.Write([]byte("Invalid request payload"))
+// 		return
+// 	}
+
+// 	snake.ID = primitive.NewObjectID()
+
+// 	_, err = collection.InsertOne(nil, snake)
+// 	if err != nil {
+// 		w.WriteHeader(http.StatusInternalServerError)
+// 		w.Write([]byte("Unable to create snake"))
+// 		return
+// 	}
+
+// 	response := struct {
+// 		Message string             `json:"message"`
+// 		Data    primitive.ObjectID `json:"data"`
+// 	}{
+// 		Message: "New Snake Created!",
+// 		Data:    snake.ID,
+// 	}
+
+// 	json.NewEncoder(w).Encode(response)
+// }
 
 func GetSnakeFromSpec(w http.ResponseWriter, r *http.Request) {
 	var params struct {

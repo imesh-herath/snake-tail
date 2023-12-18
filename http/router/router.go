@@ -15,7 +15,7 @@ func Init() *mux.Router{
 	// Set up routes
 	router.HandleFunc("/snakes", controllers.GetSnakes).Methods("GET")
 	router.HandleFunc("/snakes/{id}", controllers.GetSnakeByID).Methods("GET")
-	router.HandleFunc("/snakes", controllers.CreateSnake).Methods("POST")
+	// router.HandleFunc("/patient", controllers.CreatePatient).Methods("POST")
 	router.HandleFunc("/snakes/spec", controllers.GetSnakeFromSpec).Methods("POST")
 
 	// Start the server
