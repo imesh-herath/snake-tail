@@ -2,5 +2,27 @@
 	"server": {
 		"port": "8080",
 		"metricsport": 7070
+	},
+
+	"firebaseSnake": {
+		"url": "https://firestore.googleapis.com/v1/projects/snake-tail-ce67c/databases/(default)/documents/patients",
+		"apiKey": "AIzaSyCVjanppvNBkNe5vWWzb24P7X_47oAt6ns",
+		"authDomain": "snake-tail-ce67c.firebaseapp.com",
+		"projectId": "snake-tail-ce67c",
+		"storageBucket": "snake-tail-ce67c.appspot.com",
+		"messagingSenderId": "710658290601",
+		"appId": "1:710658290601:web:9447c3cb065c668e444ab8",
+		"measurementId": "G-C1G2NXN20C"
+	},
+
+	"firebasePatient": {
+		"url": "https://firestore.googleapis.com/v1/projects/snake-tail-ce67c/databases/(default)/documents/patients",
+		"apiKey": "AIzaSyCVjanppvNBkNe5vWWzb24P7X_47oAt6ns",
+		"authDomain": "snake-tail-ce67c.firebaseapp.com",
+		"projectId": "snake-tail-ce67c",
+		"storageBucket": "snake-tail-ce67c.appspot.com",
+		"messagingSenderId": "710658290601",
+		"appId": "1:710658290601:web:9447c3cb065c668e444ab8",
+		"measurementId": "G-C1G2NXN20C"
 	}
 }
