@@ -38,8 +38,8 @@ type PatientRequest struct {
 			TimestampValue time.Time `json:"timestampValue"`
 		} `json:"bitten_time"`
 
-		ID struct {
-			IntegerValue string `json:"integerValue"`
-		} `json:"id"`
+		SnakeImage struct {
+			SnakeImageUrl string `json:"stringValue"`
+		} `json:"snake_image_url"`
 	} `json:"fields"`
 }
