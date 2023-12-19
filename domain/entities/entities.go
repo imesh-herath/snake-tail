@@ -9,7 +9,7 @@ type SnakeResponse struct {
 			StringValue string `json:"stringValue"`
 		} `json:"patient_name"`
 		BittenTime struct {
-			TimestampValue time.Time `json:"timestampValue"`
+			TimestampValue string `json:"timestampValue"`
 		} `json:"bitten_time"`
 		SnakeImageUrl struct {
 			StringValue string `json:"stringValue"`
@@ -24,26 +24,22 @@ type SnakeResponse struct {
 	CreateTime time.Time `json:"createTime"`
 	UpdateTime time.Time `json:"updateTime"`
 }
-
-type PatientResponse struct {
-	Name string `json:"name"`
+type PatientRequest struct {
 	Fields struct {
 		PatientName struct {
 			StringValue string `json:"stringValue"`
 		} `json:"patient_name"`
-		BittenTime struct {
-			TimestampValue time.Time `json:"timestampValue"`
-		} `json:"bitten_time"`
-		SnakeImageUrl struct {
-			StringValue string `json:"stringValue"`
-		} `json:"snake_image_url"`
-		Id struct {
-			IntegerValue string `json:"integerValue"`
-		} `json:"id"`
+
 		PhoneNumber struct {
 			IntegerValue string `json:"integerValue"`
 		} `json:"phone_number"`
+
+		BittenTime struct {
+			TimestampValue time.Time `json:"timestampValue"`
+		} `json:"bitten_time"`
+
+		ID struct {
+			IntegerValue string `json:"integerValue"`
+		} `json:"id"`
 	} `json:"fields"`
-	CreateTime time.Time `json:"createTime"`
-	UpdateTime time.Time `json:"updateTime"`
 }

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -147,7 +148,6 @@ func GetSnakeByID(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
-
 // func GetSnakeByID(w http.ResponseWriter, r *http.Request) {
 // 	params := mux.Vars(r)
 // 	id, err := primitive.ObjectIDFromHex(params["id"])
@@ -168,80 +168,79 @@ func GetSnakeByID(w http.ResponseWriter, r *http.Request) {
 // 	json.NewEncoder(w).Encode(snake)
 // }
 
-// func CreatePatient(w http.ResponseWriter, r *http.Request) {
-// 	// Set up your Firestore API URL and API key
-// 	firestoreURL := config.App.FirebasePatient.Url
-// 	apiKey := config.App.FirebasePatient.ApiKey
+func CreatePatient(w http.ResponseWriter, r *http.Request) {
+	// Set up your Firestore API URL and API key
+	firestoreURL := config.App.FirebasePatient.Url
+	apiKey := config.App.FirebasePatient.ApiKey
 
-// 	// Create a SnakeRequest struct representing the data you want to create
-// 	snakeRequest := &entities.SnakeResponse{
-// 		Name: "Sample Snake",
-// 		Fields: struct {
-// 			PatientName   SnakeFieldStringValue `json:"patient_name"`
-// 			BittenTime    SnakeFieldTimestampValue `json:"bitten_time"`
-// 			SnakeImageUrl SnakeFieldStringValue `json:"snake_image_url"`
-// 			ID            SnakeFieldIntegerValue `json:"id"`
-// 			PhoneNumber   SnakeFieldIntegerValue `json:"phone_number"`
-// 		}{
-// 			PatientName:   SnakeFieldStringValue{"John Doe"},
-// 			BittenTime:    SnakeFieldTimestampValue{time.Now()},
-// 			SnakeImageUrl: SnakeFieldStringValue{"https://example.com/snake.jpg"},
-// 			ID:            SnakeFieldIntegerValue{"123"},
-// 			PhoneNumber:   SnakeFieldIntegerValue{"9876543210"},
-// 		},
-// 	}
+	// Read the request body
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Println("Error reading request body:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 
-// 	// Convert SnakeRequest to JSON
-// 	requestBody, err := json.Marshal(snakeRequest)
-// 	if err != nil {
-// 		fmt.Println("Error marshaling request body:", err)
-// 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-// 		return
-// 	}
+	// Unmarshal the JSON request body into PatientRequest struct
+	var patientRequest entities.PatientRequest
+	err = json.Unmarshal(body, &patientRequest)
+	if err != nil {
+		fmt.Println("Error unmarshaling request body:", err)
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
 
-// 	// Create an HTTP client
-// 	client := &http.Client{}
+	// Convert PatientRequest to JSON
+	requestBody, err := json.Marshal(patientRequest)
+	if err != nil {
+		fmt.Println("Error marshaling request body:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 
-// 	// Create a POST request
-// 	req, err := http.NewRequest("POST", firestoreURL, bytes.NewBuffer(requestBody))
-// 	if err != nil {
-// 		fmt.Println("Error creating request:", err)
-// 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-// 		return
-// 	}
+	// Create an HTTP client
+	client := &http.Client{}
 
-// 	// Add the API key as a query parameter
-// 	q := req.URL.Query()
-// 	q.Add("key", apiKey)
-// 	req.URL.RawQuery = q.Encode()
+	// Create a POST request
+	req, err := http.NewRequest("POST", firestoreURL, bytes.NewBuffer(requestBody))
+	if err != nil {
+		fmt.Println("Error creating request:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 
-// 	// Set content type to JSON
-// 	req.Header.Set("Content-Type", "application/json")
+	// Add the API key as a query parameter
+	q := req.URL.Query()
+	q.Add("key", apiKey)
+	req.URL.RawQuery = q.Encode()
 
-// 	// Send the request
-// 	resp, err := client.Do(req)
-// 	if err != nil {
-// 		fmt.Println("Error sending request:", err)
-// 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-// 		return
-// 	}
-// 	defer resp.Body.Close()
+	// Set content type to JSON
+	req.Header.Set("Content-Type", "application/json")
 
-// 	// Read the response body
-// 	body, err := ioutil.ReadAll(resp.Body)
-// 	if err != nil {
-// 		fmt.Println("Error reading response:", err)
-// 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-// 		return
-// 	}
+	// Send the request
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error sending request:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
 
-// 	// Process the response (body) as needed
-// 	fmt.Println("Response:", string(body))
+	// Read the response body
+	responseBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading response:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 
-// 	// Return the response to the client
-// 	w.Header().Add("Content-Type", "application/json")
-// 	w.Write(body)
-// }
+	// Process the response (responseBody) as needed
+	fmt.Println("Response:", string(responseBody))
+
+	// Return the response to the client
+	w.Header().Add("Content-Type", "application/json")
+	w.Write(responseBody)
+}
 
 // func CreateSnake(w http.ResponseWriter, r *http.Request) {
 // 	var snake Snake
