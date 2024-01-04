@@ -5,7 +5,7 @@
 	},
 
 	"firebaseSnake": {
-		"url": "https://firestore.googleapis.com/v1/projects/snake-tail-ce67c/databases/(default)/documents/patients",
+		"url": "https://firestore.googleapis.com/v1/projects/snake-tail-ce67c/databases/(default)/documents/snakes",
 		"apiKey": "AIzaSyCVjanppvNBkNe5vWWzb24P7X_47oAt6ns",
 		"authDomain": "snake-tail-ce67c.firebaseapp.com",
 		"projectId": "snake-tail-ce67c",

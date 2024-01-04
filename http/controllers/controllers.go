@@ -185,5 +185,4 @@ func CreatePatient(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetSnakeFromSpec(w http.ResponseWriter, r *http.Request) {
-
 }
