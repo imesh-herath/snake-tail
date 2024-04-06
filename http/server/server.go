@@ -4,14 +4,16 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
 	"snake-tail/config"
 	"snake-tail/http/router"
 	"time"
 )
 
 type Server struct {
-	httpSrv   *http.Server
-	wait      time.Duration
+	httpSrv *http.Server
+	wait    time.Duration
 }
 
 func NewServer(appConfig config.AppConfig) *Server {
@@ -36,17 +38,20 @@ func NewServer(appConfig config.AppConfig) *Server {
 }
 
 func (server *Server) Start() error {
-	// run HTTP server in a goroutine so that it doesn't block
+	// Create a channel to receive the interrupt signal
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt)
+
+	// Run HTTP server in a goroutine so that it doesn't block
 	go func() {
 		err := server.httpSrv.ListenAndServe()
-		if err != nil {
+		if err != nil && err != http.ErrServerClosed {
 			fmt.Println("http.server.Init", err)
 			panic("HTTP server shutting down unexpectedly...")
 		}
 	}()
 
 	fmt.Println("http.server.Init", fmt.Sprintf("HTTP server listening on %s", server.httpSrv.Addr))
-
 	return nil
 }
 
@@ -55,6 +60,7 @@ func (server *Server) Stop() {
 	defer cancel()
 
 	err := server.httpSrv.Shutdown(ctx)
+	fmt.Println("http.server.Shutting down HTTP server gracefully...")
 	if err != nil {
 		fmt.Println("http.server.ShutDown", "Unable to stop HTTP server")
 	}

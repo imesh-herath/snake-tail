@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"snake-tail/config"
 	"snake-tail/http/server"
+	"snake-tail/workers"
 	"syscall"
 )
 
@@ -14,6 +15,8 @@ var (
 )
 
 func main() {
+
+	workers.InitWorkers()
 
 	httpServer = server.NewServer(config.App)
 
