@@ -4,15 +4,85 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"os"
 	"snake-tail/config"
 	"snake-tail/domain/entities"
+	"snake-tail/services"
 	"strings"
 
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
+
+type PredictionResult struct {
+	Prediction    int    `json:"prediction"`
+	SnakeCategory string `json:"snake_category"`
+}
+
+func HandleImagePrediction(w http.ResponseWriter, r *http.Request) {
+	// Check if the request method is POST
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse multipart form to get file
+	err := r.ParseMultipartForm(10 << 20) // 10 MB max
+	if err != nil {
+		http.Error(w, "Error parsing form", http.StatusBadRequest)
+		return
+	}
+
+	// Get the file from the form data
+	file, _, err := r.FormFile("image")
+	if err != nil {
+		http.Error(w, "Error retrieving image", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// Save the received image to a temporary file
+	tempFile, err := os.CreateTemp("", "image_*.jpg")
+	if err != nil {
+		http.Error(w, "Error creating temporary file", http.StatusInternalServerError)
+		return
+	}
+	defer os.Remove(tempFile.Name())
+
+	_, err = io.Copy(tempFile, file)
+	if err != nil {
+		http.Error(w, "Error copying image to temporary file", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Println(tempFile.Name())
+	// // Call Python script to perform image prediction
+	// pythonScript := "../model/model.py" // Python script for image prediction
+
+	// cmd := exec.Command("python3", pythonScript, pythonPromPort)
+	// output, err := cmd.Output()
+	// if err != nil {
+	// 	http.Error(w, "Error executing Python script", http.StatusInternalServerError)
+	// 	return
+	// }
+
+	// Parse the output JSON from Python script
+	// var result PredictionResult
+	result := services.StarRun(tempFile.Name())
+	// err = json.Unmarshal(output, &result)
+	// if err != nil {
+	// 	http.Error(w, "Error parsing JSON output", http.StatusInternalServerError)
+	// 	return
+	// }
+
+	fmt.Println("results is: ", result)
+
+	// Redirect to the /snakes/{id} endpoint
+	http.Redirect(w, r, "/snakes/"+result, http.StatusFound)
+}
 
 func GetSnakes(w http.ResponseWriter, r *http.Request) {
 
@@ -308,7 +378,7 @@ func GetSnakeFromSpec(w http.ResponseWriter, r *http.Request) {
 	w.Write(firestoreBody)
 }
 func GetUniqueHeadShapes(w http.ResponseWriter, r *http.Request) {
-    firestoreURL := config.App.FirebaseSnake.Url
+	firestoreURL := config.App.FirebaseSnake.Url
 	apiKey := config.App.FirebaseSnake.ApiKey
 
 	// Create an HTTP client
@@ -334,9 +404,8 @@ func GetUniqueHeadShapes(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-
-    // Unmarshal the JSON request body into a struct representing the Firestore response
-    var firestoreResponse map[string]interface{}
+	// Unmarshal the JSON request body into a struct representing the Firestore response
+	var firestoreResponse map[string]interface{}
 	err = json.NewDecoder(resp.Body).Decode(&firestoreResponse)
 	if err != nil {
 		fmt.Println("Error decoding response from Firestore:", err)
@@ -344,37 +413,36 @@ func GetUniqueHeadShapes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    // Extract snake documents from Firestore response
-    snakeDocuments, ok := firestoreResponse["documents"].([]interface{})
-    if !ok {
-        fmt.Println("Invalid response format from Firestore")
-        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        return
-    }
+	// Extract snake documents from Firestore response
+	snakeDocuments, ok := firestoreResponse["documents"].([]interface{})
+	if !ok {
+		fmt.Println("Invalid response format from Firestore")
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 
-    // Call the function to get unique head shapes
-    uniqueHeadShapes := GetHeadShapesFromDocuments(snakeDocuments)
+	// Call the function to get unique head shapes
+	uniqueHeadShapes := GetHeadShapesFromDocuments(snakeDocuments)
 
-    // Marshal the unique head shapes into JSON
-    uniqueHeadShapesJSON, err := json.Marshal(uniqueHeadShapes)
-    if err != nil {
-        fmt.Println("Error marshaling unique head shapes:", err)
-        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        return
-    }
+	// Marshal the unique head shapes into JSON
+	uniqueHeadShapesJSON, err := json.Marshal(uniqueHeadShapes)
+	if err != nil {
+		fmt.Println("Error marshaling unique head shapes:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 
-    // Set the response content type header
-    w.Header().Set("Content-Type", "application/json")
+	// Set the response content type header
+	w.Header().Set("Content-Type", "application/json")
 
-    // Write the response
-    _, err = w.Write(uniqueHeadShapesJSON)
-    if err != nil {
-        fmt.Println("Error writing response:", err)
-        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        return
-    }
+	// Write the response
+	_, err = w.Write(uniqueHeadShapesJSON)
+	if err != nil {
+		fmt.Println("Error writing response:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 }
-
 
 func GetHeadShapesFromDocuments(snakeDocuments []interface{}) []string {
 	// Initialize a map to store unique head_shape entries
@@ -425,7 +493,7 @@ func GetHeadShapesFromDocuments(snakeDocuments []interface{}) []string {
 }
 
 func GetUniqueSkinColor(w http.ResponseWriter, r *http.Request) {
-    firestoreURL := config.App.FirebaseSnake.Url
+	firestoreURL := config.App.FirebaseSnake.Url
 	apiKey := config.App.FirebaseSnake.ApiKey
 
 	// Create an HTTP client
@@ -451,9 +519,8 @@ func GetUniqueSkinColor(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-
-    // Unmarshal the JSON request body into a struct representing the Firestore response
-    var firestoreResponse map[string]interface{}
+	// Unmarshal the JSON request body into a struct representing the Firestore response
+	var firestoreResponse map[string]interface{}
 	err = json.NewDecoder(resp.Body).Decode(&firestoreResponse)
 	if err != nil {
 		fmt.Println("Error decoding response from Firestore:", err)
@@ -461,35 +528,35 @@ func GetUniqueSkinColor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    // Extract snake documents from Firestore response
-    snakeDocuments, ok := firestoreResponse["documents"].([]interface{})
-    if !ok {
-        fmt.Println("Invalid response format from Firestore")
-        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        return
-    }
+	// Extract snake documents from Firestore response
+	snakeDocuments, ok := firestoreResponse["documents"].([]interface{})
+	if !ok {
+		fmt.Println("Invalid response format from Firestore")
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 
-    // Call the function to get unique head shapes
-    uniqueSkinColor := GetSnakeColorFromDocuments(snakeDocuments)
+	// Call the function to get unique head shapes
+	uniqueSkinColor := GetSnakeColorFromDocuments(snakeDocuments)
 
-    // Marshal the unique head shapes into JSON
-    uniqueSkinColorJSON, err := json.Marshal(uniqueSkinColor)
-    if err != nil {
-        fmt.Println("Error marshaling unique head shapes:", err)
-        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        return
-    }
+	// Marshal the unique head shapes into JSON
+	uniqueSkinColorJSON, err := json.Marshal(uniqueSkinColor)
+	if err != nil {
+		fmt.Println("Error marshaling unique head shapes:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 
-    // Set the response content type header
-    w.Header().Set("Content-Type", "application/json")
+	// Set the response content type header
+	w.Header().Set("Content-Type", "application/json")
 
-    // Write the response
-    _, err = w.Write(uniqueSkinColorJSON)
-    if err != nil {
-        fmt.Println("Error writing response:", err)
-        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        return
-    }
+	// Write the response
+	_, err = w.Write(uniqueSkinColorJSON)
+	if err != nil {
+		fmt.Println("Error writing response:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 }
 
 func GetSnakeColorFromDocuments(snakeDocuments []interface{}) []string {
@@ -541,7 +608,7 @@ func GetSnakeColorFromDocuments(snakeDocuments []interface{}) []string {
 }
 
 func GetUniqueSkinPattern(w http.ResponseWriter, r *http.Request) {
-    firestoreURL := config.App.FirebaseSnake.Url
+	firestoreURL := config.App.FirebaseSnake.Url
 	apiKey := config.App.FirebaseSnake.ApiKey
 
 	// Create an HTTP client
@@ -567,9 +634,8 @@ func GetUniqueSkinPattern(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-
-    // Unmarshal the JSON request body into a struct representing the Firestore response
-    var firestoreResponse map[string]interface{}
+	// Unmarshal the JSON request body into a struct representing the Firestore response
+	var firestoreResponse map[string]interface{}
 	err = json.NewDecoder(resp.Body).Decode(&firestoreResponse)
 	if err != nil {
 		fmt.Println("Error decoding response from Firestore:", err)
@@ -577,35 +643,35 @@ func GetUniqueSkinPattern(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    // Extract snake documents from Firestore response
-    snakeDocuments, ok := firestoreResponse["documents"].([]interface{})
-    if !ok {
-        fmt.Println("Invalid response format from Firestore")
-        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        return
-    }
+	// Extract snake documents from Firestore response
+	snakeDocuments, ok := firestoreResponse["documents"].([]interface{})
+	if !ok {
+		fmt.Println("Invalid response format from Firestore")
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 
-    // Call the function to get unique head shapes
-    uniqueSkinPattern := GetSnakePatternFromDocuments(snakeDocuments)
+	// Call the function to get unique head shapes
+	uniqueSkinPattern := GetSnakePatternFromDocuments(snakeDocuments)
 
-    // Marshal the unique head shapes into JSON
-    uniqueSkinPatternJSON, err := json.Marshal(uniqueSkinPattern)
-    if err != nil {
-        fmt.Println("Error marshaling unique head shapes:", err)
-        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        return
-    }
+	// Marshal the unique head shapes into JSON
+	uniqueSkinPatternJSON, err := json.Marshal(uniqueSkinPattern)
+	if err != nil {
+		fmt.Println("Error marshaling unique head shapes:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 
-    // Set the response content type header
-    w.Header().Set("Content-Type", "application/json")
+	// Set the response content type header
+	w.Header().Set("Content-Type", "application/json")
 
-    // Write the response
-    _, err = w.Write(uniqueSkinPatternJSON)
-    if err != nil {
-        fmt.Println("Error writing response:", err)
-        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        return
-    }
+	// Write the response
+	_, err = w.Write(uniqueSkinPatternJSON)
+	if err != nil {
+		fmt.Println("Error writing response:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 }
 
 func GetSnakePatternFromDocuments(snakeDocuments []interface{}) []string {

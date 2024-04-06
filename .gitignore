@@ -22,3 +22,6 @@ package-lock.json
 
 # Ignore .DS_Store files (Mac)
 .DS_Store
+
+# copy model from drive
+model/state_dict_model_v4.pt
