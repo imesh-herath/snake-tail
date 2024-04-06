@@ -162,27 +162,27 @@ def predict_batch_udf(paths: list) -> pd.Series:
   # max_index
   return max_index,snake_cat
 
+while True: 
+  # listening standard in
+  inputDataStream = sys.stdin.readline()
+  message = inputDataStream.replace("\"", "").strip()
 
-# listening standard in
-inputDataStream = sys.stdin.readline()
-message = inputDataStream.replace("\"", "").strip()
+  ### get prediction for sample
+  pred,snake_cat = predict_batch_udf([message])
+  # pred
 
-### get prediction for sample
-pred,snake_cat = predict_batch_udf([message])
-# pred
+  # snake_cat
 
-# snake_cat
+  # final_snakeResp = Resp(snake_cat)
 
-# final_snakeResp = Resp(snake_cat)
+  # sys.stdout.write(snake_cat)
 
-# sys.stdout.write(snake_cat)
-
-try:
-    json_ser_eta = json.dumps(snake_cat)
-    sys.stdout.write(json_ser_eta + "\n")
-    sys.stdout.flush()
-except Exception as ex:
-    error_msg = json.dumps({"error_code": "007", "error_msg": str(ex)})
-    sys.stdout.write(error_msg + "\n")
-    sys.stdout.flush()
+  try:
+      json_ser_eta = json.dumps(snake_cat)
+      sys.stdout.write(json_ser_eta + "\n")
+      sys.stdout.flush()
+  except Exception as ex:
+      error_msg = json.dumps({"error_code": "007", "error_msg": str(ex)})
+      sys.stdout.write(error_msg + "\n")
+      sys.stdout.flush()
 
