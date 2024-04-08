@@ -32,11 +32,19 @@ func Process(worker *domain.Worker, channel chan domain.RequestMessage) {
 		// var response domain.ModelResp
 		message := request.Request + "\n"
 
-		// Write message to worker's stdin
-		_, err := io.WriteString(worker.Stdin, message)
-		if err != nil {
-			log.Error("Error writing to worker.Stdin: ", err)
-			continue
+		// Write message to worker's stdin with retry
+		retryCount := 3
+		for i := 0; i < retryCount; i++ {
+			_, err := io.WriteString(worker.Stdin, message)
+			if err != nil {
+				if err.Error() == "write |1: broken pipe" {
+					log.Warn("Encountered broken pipe error while writing to worker.Stdin. Retrying...")
+					continue
+				}
+				log.Error("Error writing to worker.Stdin: ", err)
+				continue
+			}
+			break
 		}
 
 		// Read result from worker's stdout
