@@ -44,6 +44,7 @@ func Process(worker *domain.Worker, channel chan domain.RequestMessage) {
 				log.Error("Error writing to worker.Stdin: ", err)
 				continue
 			}
+			fmt.Println("Message sent to worker: ", message)
 			break
 		}
 
